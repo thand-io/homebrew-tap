@@ -1,0 +1,187 @@
+name: Update Formula
+
+on:
+  repository_dispatch:
+    types: [update-formula]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-formula:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout homebrew-tap
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+
+    - name: Extract version and repo info
+      id: info
+      run: |
+        VERSION="${{ github.event.client_payload.version }}"
+        REPOSITORY="${{ github.event.client_payload.repository }}"
+        RELEASE_URL="${{ github.event.client_payload.release_url }}"
+        
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "repository=$REPOSITORY" >> $GITHUB_OUTPUT
+        echo "release_url=$RELEASE_URL" >> $GITHUB_OUTPUT
+        echo "branch_name=update-agent-$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Create branch
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git checkout -b ${{ steps.info.outputs.branch_name }}
+
+    - name: Download and calculate checksums
+      id: checksums
+      run: |
+        VERSION="${{ steps.info.outputs.version }}"
+        REPO="${{ steps.info.outputs.repository }}"
+        
+        # Define URLs for all platforms
+        DARWIN_AMD64_URL="https://github.com/${REPO}/releases/download/${VERSION}/agent-darwin-amd64.tar.gz"
+        DARWIN_ARM64_URL="https://github.com/${REPO}/releases/download/${VERSION}/agent-darwin-arm64.tar.gz"
+        LINUX_AMD64_URL="https://github.com/${REPO}/releases/download/${VERSION}/agent-linux-amd64.tar.gz"
+        LINUX_ARM64_URL="https://github.com/${REPO}/releases/download/${VERSION}/agent-linux-arm64.tar.gz"
+        
+        # Create temp directory
+        mkdir -p /tmp/downloads
+        
+        # Download files and calculate SHA256
+        echo "Downloading and calculating checksums..."
+        
+        curl -sL "$DARWIN_AMD64_URL" -o /tmp/downloads/agent-darwin-amd64.tar.gz
+        curl -sL "$DARWIN_ARM64_URL" -o /tmp/downloads/agent-darwin-arm64.tar.gz
+        curl -sL "$LINUX_AMD64_URL" -o /tmp/downloads/agent-linux-amd64.tar.gz
+        curl -sL "$LINUX_ARM64_URL" -o /tmp/downloads/agent-linux-arm64.tar.gz
+        
+        DARWIN_AMD64_SHA=$(sha256sum /tmp/downloads/agent-darwin-amd64.tar.gz | cut -d' ' -f1)
+        DARWIN_ARM64_SHA=$(sha256sum /tmp/downloads/agent-darwin-arm64.tar.gz | cut -d' ' -f1)
+        LINUX_AMD64_SHA=$(sha256sum /tmp/downloads/agent-linux-amd64.tar.gz | cut -d' ' -f1)
+        LINUX_ARM64_SHA=$(sha256sum /tmp/downloads/agent-linux-arm64.tar.gz | cut -d' ' -f1)
+        
+        echo "darwin_amd64_url=$DARWIN_AMD64_URL" >> $GITHUB_OUTPUT
+        echo "darwin_arm64_url=$DARWIN_ARM64_URL" >> $GITHUB_OUTPUT
+        echo "linux_amd64_url=$LINUX_AMD64_URL" >> $GITHUB_OUTPUT
+        echo "linux_arm64_url=$LINUX_ARM64_URL" >> $GITHUB_OUTPUT
+        
+        echo "darwin_amd64_sha=$DARWIN_AMD64_SHA" >> $GITHUB_OUTPUT
+        echo "darwin_arm64_sha=$DARWIN_ARM64_SHA" >> $GITHUB_OUTPUT
+        echo "linux_amd64_sha=$LINUX_AMD64_SHA" >> $GITHUB_OUTPUT
+        echo "linux_arm64_sha=$LINUX_ARM64_SHA" >> $GITHUB_OUTPUT
+
+    - name: Create Formula directory
+      run: mkdir -p Formula
+
+    - name: Generate agent formula
+      run: |
+        cat > Formula/agent.rb << 'EOF'
+        class Agent < Formula
+          desc "Open-source agent for AI-ready privilege access management (PAM) and just-in-time access (JIT) to cloud infrastructure, SaaS applications and local systems."
+          homepage "https://github.com/${{ steps.info.outputs.repository }}"
+          license "MIT"
+          version "${{ steps.info.outputs.version }}"
+          
+          on_macos do
+            if Hardware::CPU.intel?
+              url "${{ steps.checksums.outputs.darwin_amd64_url }}"
+              sha256 "${{ steps.checksums.outputs.darwin_amd64_sha }}"
+            end
+            if Hardware::CPU.arm?
+              url "${{ steps.checksums.outputs.darwin_arm64_url }}"
+              sha256 "${{ steps.checksums.outputs.darwin_arm64_sha }}"
+            end
+          end
+
+          on_linux do
+            if Hardware::CPU.intel?
+              url "${{ steps.checksums.outputs.linux_amd64_url }}"
+              sha256 "${{ steps.checksums.outputs.linux_amd64_sha }}"
+            end
+            if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
+              url "${{ steps.checksums.outputs.linux_arm64_url }}"
+              sha256 "${{ steps.checksums.outputs.linux_arm64_sha }}"
+            end
+          end
+
+          def install
+            bin.install "agent"
+          end
+
+          test do
+            system "#{bin}/agent", "--help"
+          end
+        end
+        EOF
+
+    - name: Check for changes
+      id: changes
+      run: |
+        git add Formula/agent.rb
+        if git diff --cached --quiet; then
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Commit changes
+      if: steps.changes.outputs.has_changes == 'true'
+      run: |
+        git commit -m "Update agent formula to ${{ steps.info.outputs.version }}
+
+        - Version: ${{ steps.info.outputs.version }}
+        - Release: ${{ steps.info.outputs.release_url }}
+        - Repository: ${{ steps.info.outputs.repository }}
+        
+        Auto-generated by GitHub Actions"
+
+    - name: Push branch
+      if: steps.changes.outputs.has_changes == 'true'
+      run: git push origin ${{ steps.info.outputs.branch_name }}
+
+    - name: Create Pull Request
+      if: steps.changes.outputs.has_changes == 'true'
+      uses: peter-evans/create-pull-request@v5
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        branch: ${{ steps.info.outputs.branch_name }}
+        title: "Update agent formula to ${{ steps.info.outputs.version }}"
+        body: |
+          ## Update agent formula to ${{ steps.info.outputs.version }}
+          
+          This PR updates the agent formula to version `${{ steps.info.outputs.version }}`.
+          
+          ### Changes
+          - Updated version to `${{ steps.info.outputs.version }}`
+          - Updated download URLs and SHA256 checksums for all platforms
+          - Supports macOS (Intel & Apple Silicon) and Linux (AMD64 & ARM64)
+          
+          ### Release Information
+          - **Repository**: ${{ steps.info.outputs.repository }}
+          - **Release URL**: ${{ steps.info.outputs.release_url }}
+          
+          ### Platform Support
+          - ✅ macOS Intel (x86_64)
+          - ✅ macOS Apple Silicon (arm64)
+          - ✅ Linux AMD64
+          - ✅ Linux ARM64
+          
+          This PR was automatically generated by the formula update workflow.
+        labels: |
+          formula-update
+          automated
+        reviewers: |
+          # Add GitHub usernames of people who should review
+        assignees: |
+          # Add GitHub usernames of people who should be assigned
+        draft: false
+
+    - name: No changes detected
+      if: steps.changes.outputs.has_changes == 'false'
+      run: |
+        echo "No changes detected in the formula. The formula is already up to date with version ${{ steps.info.outputs.version }}."

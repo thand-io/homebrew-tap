@@ -8,23 +8,23 @@ This is the official Homebrew tap for thand-io tools.
 # Add the tap
 brew tap thand-io/tap
 
-# Install the agent
-brew install agent
+# Install the thand agent
+brew install thand
 ```
 
 ## Available Formulas
 
-### agent
+### thand
 
 Serverless workflow agent for cloud automation.
 
 ```bash
-brew install thand-io/tap/agent
+brew install thand-io/tap/thand
 ```
 
 **Usage:**
 ```bash
-agent --help
+thand --help
 ```
 
 ## Supported Platforms

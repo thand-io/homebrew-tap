@@ -1,7 +1,7 @@
-class Agent < Formula
+class Thand < Formula
   desc "Open-source agent for AI-ready privilege access management (PAM) and just-in-time access (JIT) to cloud infrastructure, SaaS applications and local systems."
   homepage "https://github.com/thand-io/agent"
-  license "MIT"
+  license "BSL-1.1"
   version "v0.0.16"
   
   on_macos do
@@ -27,10 +27,10 @@ class Agent < Formula
   end
 
   def install
-    bin.install "agent"
+    bin.install "agent" => "thand"
   end
 
   test do
-    system "#{bin}/agent", "--help"
+    system "#{bin}/thand", "--help"
   end
 end

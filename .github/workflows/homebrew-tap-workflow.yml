@@ -83,13 +83,13 @@ jobs:
     - name: Create Formula directory
       run: mkdir -p Formula
 
-    - name: Generate agent formula
+    - name: Generate thand formula
       run: |
-        cat > Formula/agent.rb << 'EOF'
-        class Agent < Formula
+        cat > Formula/thand.rb << 'EOF'
+        class Thand < Formula
           desc "Open-source agent for AI-ready privilege access management (PAM) and just-in-time access (JIT) to cloud infrastructure, SaaS applications and local systems."
           homepage "https://github.com/${{ steps.info.outputs.repository }}"
-          license "MIT"
+          license "BSL-1.1"
           version "${{ steps.info.outputs.version }}"
           
           on_macos do
@@ -115,11 +115,11 @@ jobs:
           end
 
           def install
-            bin.install "agent"
+            bin.install "agent" => "thand"
           end
 
           test do
-            system "#{bin}/agent", "--help"
+            system "#{bin}/thand", "--help"
           end
         end
         EOF

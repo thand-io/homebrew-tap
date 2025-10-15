@@ -155,6 +155,7 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         branch: ${{ steps.info.outputs.branch_name }}
+        base: main
         title: "Update agent formula to ${{ steps.info.outputs.version }}"
         body: |
           ## Update agent formula to ${{ steps.info.outputs.version }}

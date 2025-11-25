@@ -2,27 +2,27 @@ class Thand < Formula
   desc "Open-source agent for AI-ready privilege access management (PAM) and just-in-time access (JIT) to cloud infrastructure, SaaS applications and local systems."
   homepage "https://github.com/thand-io/agent"
   license "BSL-1.1"
-  version "v0.0.76"
+  version "v0.0.83"
   
   on_macos do
     if Hardware::CPU.intel?
-      url "https://github.com/thand-io/agent/releases/download/v0.0.76/agent-darwin-amd64.tar.gz"
-      sha256 "32ccc5ce90f6ed0d873050f3910f3c59e66b513d569d6bd42dab1b08af1b5a1b"
+      url "https://github.com/thand-io/agent/releases/download/v0.0.83/agent-darwin-amd64.tar.gz"
+      sha256 "093a2a20c5d4b7825574e5b95783754a5c9eed1cbfc46c6c2e3e11374d5c5155"
     end
     if Hardware::CPU.arm?
-      url "https://github.com/thand-io/agent/releases/download/v0.0.76/agent-darwin-arm64.tar.gz"
-      sha256 "0ef6256352a84269e872dd94b5b0307a2acfd711128584b235a1173e2ecd18f8"
+      url "https://github.com/thand-io/agent/releases/download/v0.0.83/agent-darwin-arm64.tar.gz"
+      sha256 "f2fa56c91e04769dbd799a5fbdf6fe95fb75feee36993a74c6a6475e2b013870"
     end
   end
 
   on_linux do
     if Hardware::CPU.intel?
-      url "https://github.com/thand-io/agent/releases/download/v0.0.76/agent-linux-amd64.tar.gz"
-      sha256 "aa67a7fbfc32698e7c622f236fe95228b2cf93724d5eaf8544ad12f9bfca66a6"
+      url "https://github.com/thand-io/agent/releases/download/v0.0.83/agent-linux-amd64.tar.gz"
+      sha256 "c6a999e5bb2691ae826d5d244cff131d52d2c390f63acfb57560d595f652511c"
     end
     if Hardware::CPU.arm? && Hardware::CPU.is_64_bit?
-      url "https://github.com/thand-io/agent/releases/download/v0.0.76/agent-linux-arm64.tar.gz"
-      sha256 "cb27455955f7adc1cf1a2aed345b281b80ae3abd6630675b4547ac51098075e3"
+      url "https://github.com/thand-io/agent/releases/download/v0.0.83/agent-linux-arm64.tar.gz"
+      sha256 "98f6076c16097f92f03abe1da1dd22abcc1d2a9df61a96b23b6ec681e7c4e0b8"
     end
   end
 
